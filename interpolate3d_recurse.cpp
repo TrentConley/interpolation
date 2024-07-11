@@ -8,6 +8,24 @@
 #include <string>
 #include <algorithm>
 #include <set>
+#include <unordered_map>
+
+#include <functional> // Add this include
+
+// Add this custom hash function before the PointCloud struct
+namespace std {
+    template<>
+    struct hash<vector<double>> {
+        size_t operator()(const vector<double>& v) const {
+            size_t seed = v.size();
+            for (const auto& i : v) {
+                seed ^= hash<double>()(i) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+            }
+            return seed;
+        }
+    };
+}
+
 struct PointND {
     std::vector<double> coordinates;
     double value;
@@ -19,6 +37,7 @@ struct PointCloud {
     std::vector<PointND> pts;
     std::vector<std::vector<double>> uniqueVals; // Unique values for each dimension
     size_t nDims; // Number of dimensions
+    std::unordered_map<std::vector<double>, double> point_map; // New point map
 };
 
 // Helper function to extract unique values from points
@@ -46,21 +65,10 @@ double find_lower_bound(const std::vector<double>& vec, double value) {
 
 // Helper function to find the value at a given point
 double find_value_at_point(const PointCloud& points, const std::vector<double>& query_coords) {
-    for (size_t i = 0; i < points.pts.size(); ++i) {
-        if (points.pts[i].coordinates == query_coords) {
-            return points.pts[i].value;
-        }
+    auto it = points.point_map.find(query_coords);
+    if (it != points.point_map.end()) {
+        return it->second;
     }
-    std::cout << "Second point coordinates: ";
-    for (auto coord : points.pts[1].coordinates) {
-        std::cout << coord << " ";
-    }
-    std::cout << std::endl;
-    std::cout << "Query coordinates: ";
-    for (auto coord : query_coords) {
-        std::cout << coord << " ";
-    }
-    std::cout << std::endl;
     throw std::runtime_error("Value not found for given point");
 }
 
@@ -123,36 +131,20 @@ std::vector<std::vector<double>> readCSV(const std::string& filename) {
 // Function to populate the PointCloud structure from data
 void populatePointCloud(PointCloud& pointCloud, const std::vector<std::vector<double>>& data) {
     pointCloud.pts.clear();
+    pointCloud.point_map.clear(); // Clear the point map
     pointCloud.nDims = data[0].size() - 1; // Last column is the dependent variable
 
     for (const auto& row : data) {
         std::vector<double> coords(row.begin(), row.end() - 1);
         double value = row.back();
         pointCloud.pts.emplace_back(coords, value);
+        pointCloud.point_map[coords] = value; // Add to point map
     }
 
     // Determine the unique values for each dimension using the helper function
     get_unique_values(pointCloud.pts, pointCloud.uniqueVals);
 
     std::cout << "PointCloud populated successfully with " << data.size() << " points.\n";
-    // std::cout << "Unique values for each dimension:\n";
-    // for (size_t dim = 0; dim < pointCloud.nDims; ++dim) {
-    //     std::cout << "Dimension " << dim << ": ";
-    //     for (const auto& val : pointCloud.uniqueVals[dim]) {
-    //         std::cout << val << " ";
-    //     }
-    //     std::cout << "\n";
-    // }
-
-    // Print the first 100 points in the point cloud
-    // std::cout << "First 100 points in the PointCloud:\n";
-    // for (size_t i = 0; i < std::min(static_cast<size_t>(100), data.size()); ++i) {
-    //     std::cout << "Point " << i << ": [";
-    //     for (size_t j = 0; j < data[i].size(); ++j) {
-    //         std::cout << data[i][j] << (j < data[i].size() - 1 ? ", " : "]");
-    //     }
-    //     std::cout << "\n";
-    // }
 }
 
 int main() {
@@ -223,18 +215,3 @@ int main() {
 
     return 0;
 }
-
-// // Function to generate dummy data for 3D points
-// std::vector<std::vector<double>> generateDummyData() {
-//     return {
-//         {0.0, 0.0, 0.0, 0.0}, {1.0, 0.0, 0.0, 1.0}, {2.0, 0.0, 0.0, 4.0},
-//         {0.0, 1.0, 0.0, 1.0}, {1.0, 1.0, 0.0, 2.0}, {2.0, 1.0, 0.0, 5.0},
-//         {0.0, 2.0, 0.0, 4.0}, {1.0, 2.0, 0.0, 5.0}, {2.0, 2.0, 0.0, 8.0},
-//         {0.0, 0.0, 1.0, 1.0}, {1.0, 0.0, 1.0, 2.0}, {2.0, 0.0, 1.0, 5.0},
-//         {0.0, 1.0, 1.0, 2.0}, {1.0, 1.0, 1.0, 3.0}, {2.0, 1.0, 1.0, 6.0},
-//         {0.0, 2.0, 1.0, 5.0}, {1.0, 2.0, 1.0, 6.0}, {2.0, 2.0, 1.0, 9.0},
-//         {0.0, 0.0, 2.0, 4.0}, {1.0, 0.0, 2.0, 5.0}, {2.0, 0.0, 2.0, 8.0},
-//         {0.0, 1.0, 2.0, 5.0}, {1.0, 1.0, 2.0, 6.0}, {2.0, 1.0, 2.0, 9.0},
-//         {0.0, 2.0, 2.0, 8.0}, {1.0, 2.0, 2.0, 9.0}, {2.0, 2.0, 2.0, 12.0}
-//     };
-// }
