@@ -9,10 +9,8 @@
 #include <algorithm>
 #include <set>
 #include <unordered_map>
+#include <functional>
 
-#include <functional> // Add this include
-
-// Add this custom hash function before the PointCloud struct
 namespace std {
     template<>
     struct hash<vector<double>> {
@@ -89,8 +87,6 @@ double interpolate_recursive(const std::vector<double>& query_point, const Point
 
     double lower_value = interpolate_recursive(lower_coords, points, dim - 1);
     double upper_value = interpolate_recursive(upper_coords, points, dim - 1);
-    // std::cout << "Lower bound for dimension " << dim-1 << ": " << lower << std::endl;
-    // std::cout << "Upper bound for dimension " << dim-1 << ": " << upper << std::endl;
 
     return (upper - query_point[dim - 1]) / (upper - lower) * lower_value + (query_point[dim - 1] - lower) / (upper - lower) * upper_value;
 }
