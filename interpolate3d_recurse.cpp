@@ -128,14 +128,13 @@ std::vector<std::vector<double>> readCSV(const std::string& filename) {
 void populatePointCloud(PointCloud& pointCloud, const std::vector<std::vector<double>>& data) {
     pointCloud.pts.clear();
     pointCloud.point_map.clear(); // Clear the point map
-    pointCloud.nDims = data[0].size() - 1; // Last column is the dependent variable
+    pointCloud.nDims = data[0].size() - 1;
 
     for (const auto& row : data) {
         std::vector<double> coords(row.begin(), row.end() - 1);
         double value = row.back();
         pointCloud.pts.emplace_back(coords, value);
-        pointCloud.point_map[coords] = value; // Add to point map
-    }
+        pointCloud.point_map[coords] = value;
 
     // Determine the unique values for each dimension using the helper function
     get_unique_values(pointCloud.pts, pointCloud.uniqueVals);
@@ -144,28 +143,11 @@ void populatePointCloud(PointCloud& pointCloud, const std::vector<std::vector<do
 }
 
 int main() {
-    // Use dummy data instead of reading from CSV file
-    std::string filename = "testing_coeffs_2.csv"; // Replace with your CSV file path
+    std::string filename = "testing_coeffs_2.csv";
 
-    std::vector<std::vector<double>> data = readCSV(filename);
-
-    // Generate a point cloud based on the dummy data
     std::cout << "Populating PointCloud...\n";
     PointCloud pointCloud;
     populatePointCloud(pointCloud, data);
-
-    // Print the PointCloud
-    // std::cout << "PointCloud contents:\n";
-    // for (const auto& point : pointCloud.pts) {
-    //     std::cout << "Coordinates: [";
-    //     for (size_t i = 0; i < point.coordinates.size(); ++i) {
-    //         std::cout << point.coordinates[i];
-    //         if (i < point.coordinates.size() - 1) {
-    //             std::cout << ", ";
-    //         }
-    //     }
-    //     std::cout << "], Value: " << point.value << "\n";
-    // }
 
     std::vector<double> values;
     for (const auto& point : pointCloud.pts) {
